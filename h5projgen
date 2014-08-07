@@ -1,0 +1,253 @@
+#!/usr/bin/env python3
+#
+# Copyright (C) 2014 by Victor A. Hernández
+#
+# Script to create an hml5 project skeleton
+# it recieve: -p <project-name> -- project name
+#             -g                -- git version control
+#             -h                -- print the usage
+#             -v                -- version
+#
+# This is free software, and you
+# are welcome to redistribute it under certain conditions.  
+# See the GNU General Public Licence v3 for details
+
+import os, sys
+from getopt import getopt, GetoptError
+from subprocess import call, Popen, PIPE
+
+# Global constants
+VERSION = '1.0'
+DEVELOPER = 'Victor A. Hernández'
+    
+def version():
+    print('''\
+h5projgen Version:{0}
+Copyright (C) 2014 by {1}
+<http: >
+
+h5projgen comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
+are welcome to redistribute it under certain conditions.  See the GNU
+General Public Licence v3 for details.
+
+h5projgen is a HTML5 project generator.\
+    '''.format(VERSION, DEVELOPER))
+
+def usage():
+    version()
+    print('''\
+
+Uasage: h5projgen [OPTIONS]
+    -v                  prints the version
+    -h                  Shows this message
+    -p <project name>   name of the project to be created
+    -g                  initialize git repository
+
+Examples:
+    h5projgen -p newApp 
+        the above command generates the newApp project with the structure
+        newApp
+        ├── README.txt
+        ├── audio   
+        ├── images
+        ├── lib
+        ├── newApp.css
+        ├── newApp.html
+        └── newApp.js
+
+    h5projgen -p newApp -g
+        generates the newApp project and initialize a git repository 
+        with a .gitignore file and add an initial commit
+        newApp
+        ├── README.txt
+        ├── audio
+        │   └── gitAddFile
+        ├── images
+        │   └── gitAddFile
+        ├── lib
+        │   └── gitAddFile
+        ├── newApp.css
+        ├── newApp.html
+        └── newApp.js
+        ''')
+def write_file(file_name, file_content):
+    open_file = open(file_name, mode='w', encoding='utf-8')
+    open_file.write(file_content)
+    open_file.close()
+
+def create_files(project_name):
+    #html file
+    html_addr = '{0}/{0}.html'.format(project_name)
+    project_name_cap = project_name[:1].upper() + project_name[1:]
+    html_content = '''\
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>{1}</title>
+        <link rel="stylesheet" type="text/css" href="{0}.css" />
+        <script type="text/javascript" src="{0}.js"></script>
+        <script type="text/javascript" src="lib/jquery-1.11.1.min.js"></script>
+    </head>
+    <body>
+        <div id="app">
+            <header>{1}</header>
+            <div id="main"></div>
+            <footer></footer>
+        </div>
+    </body>
+</html>
+    '''.format(project_name, project_name_cap)
+    print('Creating file {}'.format(html_addr))
+    write_file(html_addr, html_content)
+    # css file
+    css_addr = '{0}/{0}.css'.format(project_name)
+    css_content = '''\
+body
+{
+    font: 1em Verdana, Geneva, sans-serif;
+    padding: 0;
+    margin: 5px;
+    color: Black;
+    background-color: WhiteSmoke;
+}
+div
+{
+    padding: 0;
+    margin: 0;
+}
+button
+{
+    cursor: pointer;
+}
+.hidden
+{
+    display: none;
+}
+
+#app
+{
+    margin: 4px;
+    background-color: #bbc;
+}
+#app>header
+{
+    padding: 0 0.5em;
+    font-size: 1.5em;
+    color: WhiteSmoke;
+    background-color: #006;
+}
+#app>footer
+{
+    padding: 0.25em;
+    color: WhiteSmoke;
+    background-color: #006;
+}
+#main
+{
+    margin: 1em;
+}
+    '''
+    print('Creating file {}'.format(css_addr))
+    write_file(css_addr, css_content)
+    # js file
+    js_addr = '{0}/{0}.js'.format(project_name) 
+    js_content = '''\
+"use strict";
+
+function {0}()
+{{
+    var version = "v1.0";
+
+    function setStatus(message)
+    {{
+        $("#app>footer").text(message);
+    }}
+
+    this.start = function()
+    {{
+        $("#app>header").append(version);
+        setStatus("ready");
+    }}
+}}
+
+$(function() {{
+    window.app = new {0}();
+    window.app.start();
+}});
+    '''.format(project_name_cap)
+    print('Creating file {}'.format(js_addr))
+    write_file(js_addr, js_content)
+    write_file("{0}/README.txt".format(project_name), "README file for {0}".format(project_name_cap))
+
+def create_dirs(project_name):
+    dirs = ('audio', 'images', 'lib')
+    if not os.path.exists(project_name):
+        print("creating dirs {0} {1} {2}".format(*dirs))
+        for dir in dirs:
+            os.makedirs(project_name + '/' + dir)
+
+def init_git(project_name):
+    git_ignore_content = '''\
+## generic files to ignore
+*~
+*.lock
+*.DS_Store
+*.swp
+*.out
+    '''
+    git_ignore_addr = '{0}/.gitignore'.format(project_name)
+    write_file(git_ignore_addr, git_ignore_content)
+    dirs = ('audio', 'images', 'lib')
+    for dir in dirs:
+        write_file('{0}/{1}/{2}'.format(project_name, dir, 'gitAddFile'), 
+            "file used to add the empty dir to git")
+    call(["git", 'init', project_name])
+    command = "cd {0} && git add . && git commit -m 'Initial Commit'".format(project_name)
+    call(command, shell=True)
+
+def main(argv):
+    git_enabled = False
+    project_name = ''
+
+    if len(argv) == 0:
+        usage()
+        sys.exit(2)
+
+    try:
+        opts, args = getopt(argv, 'hvgp:')
+    except GetoptError as e:
+        usage()
+        sys.exit(2)
+
+    if len(opts) == 0:
+        usage()
+        sys.exit(2)
+
+    for opt, arg in opts:
+        if opt == '-h':
+            usage()
+            sys.exit()
+        elif opt == '-v':
+            version()
+            sys.exit()
+        elif opt == '-g':
+            git_enabled = True
+        elif opt == '-p':
+            project_name = arg
+        else:
+            usage()
+
+    if project_name == '':
+        usage()
+        sys.exit(2)
+
+    create_dirs(project_name)
+    create_files(project_name)
+    if git_enabled:
+        init_git(project_name)
+    print("Project created:")
+    call(["tree", project_name])
+
+if __name__ == '__main__':
+    main(sys.argv[1:])
+        
