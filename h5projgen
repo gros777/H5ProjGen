@@ -24,7 +24,7 @@ def version():
     print('''\
 h5projgen Version:{0}
 Copyright (C) 2014 by {1}
-<http: >
+<https://github.com/gros777/H5ProjGen >
 
 h5projgen comes with ABSOLUTELY NO WARRANTY.  This is free software, and you
 are welcome to redistribute it under certain conditions.  See the GNU
