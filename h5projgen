@@ -15,10 +15,13 @@
 import os, sys
 from getopt import getopt, GetoptError
 from subprocess import call, Popen, PIPE
+from urllib.request import urlopen
 
 # Global constants
 VERSION = '1.0'
 DEVELOPER = 'Victor A. Hernández'
+JQUERY_FILE_NAME = 'jquery-1.11.1.min.js'
+JQUERY_URL = 'http://code.jquery.com/jquery-1.11.1.min.js'
     
 def version():
     print('''\
@@ -85,8 +88,8 @@ def create_files(project_name):
     <head>
         <title>{1}</title>
         <link rel="stylesheet" type="text/css" href="{0}.css" />
+        <script type="text/javascript" src="lib/{2}"></script>
         <script type="text/javascript" src="{0}.js"></script>
-        <script type="text/javascript" src="lib/jquery-1.11.1.min.js"></script>
     </head>
     <body>
         <div id="app">
@@ -96,7 +99,7 @@ def create_files(project_name):
         </div>
     </body>
 </html>
-    '''.format(project_name, project_name_cap)
+    '''.format(project_name, project_name_cap, JQUERY_FILE_NAME)
     print('Creating file {}'.format(html_addr))
     write_file(html_addr, html_content)
     # css file
@@ -205,6 +208,12 @@ def init_git(project_name):
     command = "cd {0} && git add . && git commit -m 'Initial Commit'".format(project_name)
     call(command, shell=True)
 
+def getJquery(project_name):
+    jquery_addr = '{0}/lib/{1}'.format(project_name, JQUERY_FILE_NAME)
+    with urlopen(JQUERY_URL) as response, open(jquery_addr, 'wb') as out_file:
+        data = response.read() # a `bytes` object
+        out_file.write(data)
+
 def main(argv):
     git_enabled = False
     project_name = ''
@@ -243,6 +252,7 @@ def main(argv):
 
     create_dirs(project_name)
     create_files(project_name)
+    getJquery(project_name)
     if git_enabled:
         init_git(project_name)
     print("Project created:")
